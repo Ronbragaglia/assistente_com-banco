@@ -1,0 +1,157 @@
+version: '3.8'
+
+services:
+  # OpenAI Database Assistant
+  assistant:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openai-database-assistant
+    image: openai-database-assistant:latest
+    restart: unless-stopped
+    
+    # Environment variables
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_PATH=/app/data/eventos.db
+      - LOG_FILE=/app/logs/assistant.log
+    
+    # Volume mounts
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    
+    # Interactive mode
+    stdin_open: true
+    tty: true
+    
+    # Networks
+    networks:
+      - assistant-network
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import database_assistant; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    
+    # Default command
+    command: ["db-assistant", "--interactive"]
+  
+  # Development service with hot reload
+  assistant-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openai-database-assistant-dev
+    image: openai-database-assistant:dev
+    restart: unless-stopped
+    
+    # Environment variables
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_PATH=/app/data/eventos.db
+      - LOG_FILE=/app/logs/assistant.log
+      - LOG_LEVEL=DEBUG
+    
+    # Volume mounts (including source code for development)
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./backups:/app/backups
+    
+    # Interactive mode
+    stdin_open: true
+    tty: true
+    
+    # Networks
+    networks:
+      - assistant-network
+    
+    # Default command
+    command: ["db-assistant", "--interactive"]
+    profiles:
+      - dev
+  
+  # Test service
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: openai-database-assistant-test
+    image: openai-database-assistant:test
+    restart: "no"
+    
+    # Environment variables
+    environment:
+      - PYTHONUNBUFFERED=1
+      - DATABASE_PATH=/tmp/test.db
+      - LOG_LEVEL=DEBUG
+    
+    # Volume mounts
+    volumes:
+      - ./tests:/app/tests
+      - ./src:/app/src
+    
+    # Networks
+    networks:
+      - assistant-network
+    
+    # Default command
+    command: ["pytest", "tests/", "-v", "--cov=src"]
+    profiles:
+      - test
+  
+  # Database backup service
+  backup:
+    image: alpine:latest
+    container_name: openai-database-assistant-backup
+    restart: unless-stopped
+    
+    # Volume mounts
+    volumes:
+      - ./data:/data/source:ro
+      - ./backups:/data/backup
+    
+    # Cron job for daily backups
+    command: >
+      sh -c "
+        apk add --no-cache sqlite &&
+        while true; do
+          echo 'Creating backup...' &&
+          cp /data/source/eventos.db /data/backup/eventos_$$(date +%Y%m%d_%H%M%S).db &&
+          echo 'Backup created successfully' &&
+          sleep 86400
+        done
+      "
+    
+    # Networks
+    networks:
+      - assistant-network
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "ls", "/data/backup"]
+      interval: 1h
+      timeout: 10s
+      retries: 3
+    profiles:
+      - backup
+
+networks:
+  assistant-network:
+    driver: bridge
+    name: assistant-network
+
+volumes:
+  data:
+  logs:
+  backups:

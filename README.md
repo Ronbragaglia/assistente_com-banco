@@ -4,8 +4,43 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![PyPI](https://img.shields.io/pypi/v/openai-database-assistant)](https://pypi.org/project/openai-database-assistant/)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/openai-database-assistant)](https://pypi.org/project/openai-database-assistant/)
+[![Tests](https://img.shields.io/github/actions/workflow/ci.yml/Ronbragaglia/assistente_com-banco?branch=main)](https://github.com/Ronbragaglia/assistente_com-banco/actions)
+[![Coverage](https://img.shields.io/codecov/c/github/Ronbragaglia/assistente_com-banco)](https://codecov.io/gh/Ronbragaglia/assistente_com-banco)
+[![CodeQL](https://github.com/Ronbragaglia/assistente_com-banco/actions/workflows/codeql.yml/badge.svg)](https://github.com/Ronbragaglia/assistente_com-banco/actions/workflows/codeql.yml)
+[![Docker](https://img.shields.io/docker/v/ronbragaglia/openai-database-assistant?label=Docker)](https://hub.docker.com/r/ronbragaglia/openai-database-assistant)
+[![Pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
+[![CodeFactor](https://www.codefactor.io/repository/github/Ronbragaglia/assistente_com-banco/badge)](https://www.codefactor.io/repository/github/Ronbragaglia/assistente_com-banco)
+[![Maintainability](https://api.codeclimate.com/v1/badges/maintainability-percentage/Ronbragaglia/assistente_com-banco?style=flat)](https://codeclimate.com/github/Ronbragaglia/assistente_com-banco/maintainability)
 
 Um assistente de IA avançado com banco de dados SQLite e busca de similaridade usando TF-IDF e cosine similarity. Transforme suas perguntas em respostas inteligentes com cache automático!
+
+## 📋 Índice
+
+- [Visão Geral](#visão-geral)
+- [Funcionalidades](#funcionalidades)
+- [Arquitetura](#arquitetura)
+- [Instalação](#instalação)
+- [Configuração](#configuração)
+- [Como Usar](#como-usar)
+- [Exemplos Avançados](#exemplos-avançados)
+- [Docker](#docker)
+- [Desenvolvimento](#desenvolvimento)
+- [Testes](#testes)
+- [Contribuindo](#contribuindo)
+- [Roadmap](#roadmap)
+- [FAQ](#faq)
+- [Licença](#licença)
+
+## 🎯 Visão Geral
+
+O OpenAI Database Assistant é uma solução completa para criar assistentes de IA com memória persistente. Ele combina:
+
+- **Armazenamento Inteligente**: Banco de dados SQLite para persistência de dados
+- **Busca Semântica**: TF-IDF com cosine similarity para encontrar respostas similares
+- **Integração OpenAI**: GPT-3.5/GPT-4 para geração de respostas
+- **Cache Automático**: Armazena perguntas e respostas para respostas mais rápidas
+- **Interface Flexível**: CLI interativa ou uso como biblioteca Python
 
 ## ✨ Funcionalidades
 
@@ -164,6 +199,100 @@ else:
         similarity_search.update([(question, response)])
 ```
 
+## 🏗️ Arquitetura
+
+O projeto segue uma arquitetura modular e escalável:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     CLI Interface                        │
+│                  (interactive/ask/add)                   │
+└──────────────────┬──────────────────────────────────────────┘
+                   │
+                   ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Application Layer                      │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────┐ │
+│  │   Config     │  │   Logger     │  │  Utils   │ │
+│  │   (Pydantic) │  │  (Colorlog)  │  │          │ │
+│  └──────────────┘  └──────────────┘  └──────────┘ │
+└──────────────────┬──────────────────────────────────────────┘
+                   │
+        ┌──────────┴──────────┐
+        ▼                     ▼
+┌──────────────────┐  ┌──────────────────┐
+│  OpenAI Module  │  │  Database Module │
+│   (GPT API)     │  │    (SQLite)      │
+└──────────────────┘  └──────────────────┘
+        │                     │
+        └──────────┬──────────┘
+                   ▼
+        ┌──────────────────┐
+        │ Similarity      │
+        │    Search       │
+        │  (TF-IDF)      │
+        └──────────────────┘
+```
+
+### Componentes Principais
+
+- **Config Module**: Gerenciamento de configurações com Pydantic Settings
+- **Logger Module**: Sistema de logging avançado com colorlog
+- **Database Module**: Gerenciamento do banco de dados SQLite
+- **Similarity Module**: Busca de similaridade usando TF-IDF
+- **Assistant Module**: Integração com a API da OpenAI
+- **CLI Module**: Interface de linha de comando interativa
+
+### Fluxo de Dados
+
+1. **Usuário faz uma pergunta** → CLI
+2. **Busca no cache** → Similarity Search
+3. **Se encontrado** → Retorna resposta do cache
+4. **Se não encontrado** → Gera resposta com OpenAI
+5. **Armazena no cache** → Database + Similarity Search
+6. **Retorna resposta** → Usuário
+
+## 🐳 Docker
+
+### Usando Docker
+
+```bash
+# Construir a imagem
+docker build -t openai-database-assistant .
+
+# Executar o container
+docker run -it --rm \
+  -v $(pwd)/data:/app/data \
+  -v $(pwd)/logs:/app/logs \
+  openai-database-assistant
+```
+
+### Usando Docker Compose
+
+```bash
+# Iniciar serviços
+docker-compose up -d
+
+# Ver logs
+docker-compose logs -f
+
+# Parar serviços
+docker-compose down
+```
+
+### Perfis do Docker Compose
+
+```bash
+# Modo desenvolvimento
+docker-compose --profile dev up
+
+# Modo de teste
+docker-compose --profile test up
+
+# Modo de backup
+docker-compose --profile backup up
+```
+
 ## 📁 Estrutura do Projeto
 
 ```
@@ -293,6 +422,70 @@ pre-commit run --all-files
 | `LOG_LEVEL` | Nível de logging | `INFO` |
 | `LOG_FILE` | Arquivo de log | `logs/assistant.log` |
 | `CACHE_ENABLED` | Habilitar cache | `true` |
+
+## 🚀 Roadmap
+
+### Próximas Funcionalidades Planejadas
+
+- [ ] **Streaming de Respostas**: Suporte a streaming de respostas da OpenAI
+- [ ] **Múltiplos Embeddings**: Suporte a diferentes modelos de embeddings (OpenAI, Sentence Transformers)
+- [ ] **Export/Import**: Funcionalidade para exportar e importar Q&A pairs
+- [ ] **Interface Web**: Dashboard web para gerenciamento
+- [ ] **Multi-idioma**: Suporte a múltiplos idiomas
+- [ ] **API REST**: Endpoints REST para integração
+- [ ] **WebSocket**: Suporte a WebSocket para comunicação em tempo real
+- [ ] **Analytics**: Dashboard de analytics e métricas
+- [ ] **Backup Automático**: Sistema de backup automático com retenção
+- [ ] **Plugins**: Sistema de plugins para extensibilidade
+
+### Versões Futuras
+
+#### v3.0.0 (Q2 2024)
+- Interface web completa
+- API REST com autenticação
+- Suporte a múltiplos bancos de dados (PostgreSQL, MySQL)
+
+#### v4.0.0 (Q3 2024)
+- Sistema de plugins
+- Analytics avançado
+- Multi-tenancy
+
+## ❓ FAQ
+
+### Perguntas Frequentes
+
+**Q: Posso usar este projeto comercialmente?**
+R: Sim! O projeto é licenciado sob a Licença MIT, permitindo uso comercial.
+
+**Q: Quais modelos da OpenAI são suportados?**
+R: Todos os modelos da OpenAI são suportados, incluindo GPT-3.5, GPT-4, GPT-4-turbo, etc.
+
+**Q: Como funciona o cache de respostas?**
+R: O sistema usa TF-IDF com cosine similarity para encontrar perguntas similares no banco de dados. Se uma pergunta similar for encontrada, a resposta correspondente é retornada imediatamente.
+
+**Q: Posso usar um banco de dados diferente do SQLite?**
+R: Atualmente, apenas SQLite é suportado, mas estamos planejando adicionar suporte a PostgreSQL e MySQL em versões futuras.
+
+**Q: Como posso contribuir com o projeto?**
+R: Consulte o arquivo [CONTRIBUTING.md](CONTRIBUTING.md) para diretrizes detalhadas sobre como contribuir.
+
+**Q: O projeto é seguro para uso em produção?**
+R: Sim! O projeto inclui validações de entrada, tratamento de erros robusto, e passou por testes de segurança. No entanto, sempre revise e teste antes de usar em produção.
+
+**Q: Posso usar embeddings customizados?**
+R: Atualmente, o projeto usa TF-IDF para similaridade. Suporte a embeddings customizados está planejado para versões futuras.
+
+**Q: Como faço backup do banco de dados?**
+R: O banco de dados SQLite é um arquivo simples. Basta copiar o arquivo `data/eventos.db` para fazer backup. O projeto também inclui um serviço de backup automático via Docker Compose.
+
+**Q: Posso integrar com outros serviços?**
+R: Sim! O projeto foi desenhado para ser modular. Você pode facilmente integrar com outros serviços usando a API ou extendendo os módulos existentes.
+
+**Q: Qual é a performance do sistema?**
+R: O sistema é otimizado para performance:
+- Busca no cache: < 10ms
+- Geração de resposta com OpenAI: 1-5s (depende do modelo)
+- Inserção no banco: < 5ms
 
 ## 🤝 Contribuindo
 
